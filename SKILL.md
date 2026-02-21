@@ -1,5 +1,5 @@
 ---
-name: telegram-mini-app-skill
+name: telegram-mini-app-guide
 description: Comprehensive guide for developing Telegram Mini Apps with any web framework (React, Vue, Svelte, vanilla JS, etc.). Covers the Telegram Web App SDK, theming, UI components, navigation, data validation, and platform best practices.
 ---
 
@@ -623,24 +623,49 @@ Two types of safe areas to handle, especially critical in full-screen mode:
 
 It is highly recommended in frameworks like React/Next.js to avoid applying these to the raw document `body`, as Telegram's Webview injection can cause `100vw` or scaling constraints to clip or shrink off-screen horizontally.
 
-Instead, apply bounding constraints using `w-full` to an interior root wrapper (like a Root Layout div), and compound the padding using CSS `calc()` combined with the injected variables:
+Instead, the most bulletproof approach across all Webview versions involves a hybrid Javascript-to-CSS fallback. Combining `contentSafeAreaInset.top` (Telegram UI) and `safeAreaInset.top` (Mobile Device Notches) prevents overlap completely:
+
+**1. Calculate and combine the padding natively in your Telegram Initialization loop:**
+
+```javascript
+// Add base safeArea (device notches) + contentSafe (Telegram header ui) together
+// Apply a hard fallback (e.g., 48px) just in case Telegram fails to inject variables entirely
+const top = Math.max(
+  48,
+  (tg.contentSafeAreaInset?.top || 0) + (tg.safeAreaInset?.top || 0),
+);
+const bottom = Math.max(
+  32,
+  (tg.contentSafeAreaInset?.bottom || 0) + (tg.safeAreaInset?.bottom || 0),
+);
+
+// Explicitly inject safe bounds into your root HTML variables
+document.documentElement.style.setProperty("--safe-top", `${top}px`);
+document.documentElement.style.setProperty("--safe-bottom", `${bottom}px`);
+```
+
+**2. In your CSS (like `globals.css` or Tailwind config), reference the injected variables:**
 
 ```css
-.safe-wrapper {
-  width: 100%;
-  /* Combine your base layout padding (e.g. 16px) with dynamic Telegram injection */
-  padding-top: calc(
-    16px +
-      var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, 24px))
-  );
-  padding-bottom: calc(
-    16px +
-      var(
-        --tg-content-safe-area-inset-bottom,
-        var(--tg-safe-area-inset-bottom, 24px)
-      )
-  );
+:root {
+  /* You can optionally add env() fallbacks here if you want native browser backup */
+  --safe-top: env(safe-area-inset-top, 48px);
+  --safe-bottom: env(safe-area-inset-bottom, 32px);
 }
+```
+
+**3. Finally, in your React individual Page wrappers padding:**
+
+```tsx
+<main
+  style={{
+    // Add your desired extra padding (e.g., 1rem) to the base safe area boundary mathematically
+    paddingTop: "calc(1rem + var(--safe-top))",
+    paddingBottom: "calc(2rem + var(--safe-bottom))",
+  }}
+>
+  {/* Content goes here safely below the Close/Settings notch */}
+</main>
 ```
 
 ### Listening for Safe Area Changes
