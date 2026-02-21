@@ -1,5 +1,5 @@
 ---
-name: telegram-mini-app-guide
+name: telegram-mini-app-skill
 description: Comprehensive guide for developing Telegram Mini Apps with any web framework (React, Vue, Svelte, vanilla JS, etc.). Covers the Telegram Web App SDK, theming, UI components, navigation, data validation, and platform best practices.
 ---
 
