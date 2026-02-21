@@ -621,10 +621,25 @@ Two types of safe areas to handle, especially critical in full-screen mode:
 
 ### Content Safe Area (Telegram's own header, bottom bar)
 
+It is highly recommended in frameworks like React/Next.js to avoid applying these to the raw document `body`, as Telegram's Webview injection can cause `100vw` or scaling constraints to clip or shrink off-screen horizontally.
+
+Instead, apply bounding constraints using `w-full` to an interior root wrapper (like a Root Layout div), and compound the padding using CSS `calc()` combined with the injected variables:
+
 ```css
-.content {
-  padding-top: var(--tg-content-safe-area-inset-top, 0px);
-  padding-bottom: var(--tg-content-safe-area-inset-bottom, 0px);
+.safe-wrapper {
+  width: 100%;
+  /* Combine your base layout padding (e.g. 16px) with dynamic Telegram injection */
+  padding-top: calc(
+    16px +
+      var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, 24px))
+  );
+  padding-bottom: calc(
+    16px +
+      var(
+        --tg-content-safe-area-inset-bottom,
+        var(--tg-safe-area-inset-bottom, 24px)
+      )
+  );
 }
 ```
 
